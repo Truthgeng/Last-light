@@ -1,0 +1,36 @@
+{
+  "name": "last-light-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Last Light: post-quantum crypto inheritance on QoreChain. Web app for owners, heirs and guardians.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@noble/ciphers": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "@noble/post-quantum": "0.7.1",
+    "@qorechain/evm": "^0.14.0",
+    "@qorechain/qorex-rainbowkit": "^0.1.0",
+    "@qorechain/qorex-types": "^0.1.0",
+    "@qorechain/sdk": "^0.14.0",
+    "@rainbow-me/rainbowkit": "^2.2.11",
+    "@tanstack/react-query": "^5.107.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "viem": "^2.57.19",
+    "wagmi": "^2.19.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21"
+  }
+}

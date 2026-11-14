@@ -33,7 +33,7 @@ Before release, the heir holds only Half A and each guardian holds only one shar
 |---|---|
 | `packages/crypto` | Encryption core: ML-KEM-1024 envelopes, key split, guardian shares, seal, handoff and recover. Runs entirely on the user's device. |
 | `contracts` | The LastLight vault contract: check-ins, release, guardian handoffs. Hardhat, deployed on the QoreChain EVM. |
-| `web` | The app for owners, heirs and guardians (coming next) |
+| `web` | The app for owners, heirs and guardians. Vite, React, wagmi and the QoreX wallet. Has a demo mode that runs the whole flow in the browser with sample people. |
 
 ## Encryption details
 
@@ -55,6 +55,20 @@ Each vault id is known before sealing (`nextVaultId`), because every encrypted p
 cd packages/crypto && npm install && npm test     # encryption core
 cd contracts && pnpm install && pnpm test         # contract, including a full seal, release and recover run
 ```
+
+## The web app
+
+```sh
+cd web
+pnpm install
+cp .env.example .env          # set VITE_LASTLIGHT_ADDRESS after deploying the contract
+pnpm dev                      # http://localhost:5180
+```
+
+- **Demo mode** (`?demo`, or when no contract address is set): five sample people (owner, heir, three guardians), a simulated chain and a "skip time" button. The encryption is the real ML-KEM-1024 code.
+- **Testnet mode:** connect the QoreX wallet. Publishing your ML-KEM-1024 key is a native `MsgRegisterKEMKey`, hybrid-signed by QoreX (secp256k1 + ML-DSA-87). Vault actions are calls to the LastLight contract on the EVM lane.
+- Your ML-KEM secret key stays in this browser. The app asks you to download a backup, and can restore it on another device.
+- The browser reads the chain's REST API through `/lcd` (a Vite proxy in development, a rewrite in `vercel.json` when hosted), because the public endpoint sends no CORS headers.
 
 ## Deploy to the QoreChain testnet
 
