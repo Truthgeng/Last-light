@@ -716,6 +716,20 @@ small.key-missing {
   border-radius: 99px;
   transition: width 0.6s ease;
 }
+.locked-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.btn.locked,
+.btn.locked:disabled {
+  background: rgba(243, 237, 228, 0.04);
+  border: 1px dashed rgba(243, 237, 228, 0.18);
+  color: rgba(243, 237, 228, 0.45);
+  cursor: not-allowed;
+  opacity: 1;
+}
 .secret {
   border: 1px solid rgba(143, 214, 160, 0.35);
   border-radius: 12px;

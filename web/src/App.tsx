@@ -811,7 +811,16 @@ function VaultCard(p: {
             Hand off to heir
           </button>
         )}
-        {gIndex >= 0 && !v.released && !v.cancelled && <span className="small muted">You can hand off once the owner misses a check-in.</span>}
+        {gIndex >= 0 && !v.released && !v.cancelled && (
+          <div className="locked-action">
+            <button className="btn small locked" disabled aria-describedby={`unlock-${v.id}`}>
+              <Lock /> Hand off to heir
+            </button>
+            <span id={`unlock-${v.id}`} className="small muted">
+              Unlocks in {duration(left)}, if {p.nameOf(v.owner)} does not check in again.
+            </span>
+          </div>
+        )}
         {gIndex >= 0 && v.handedOff[gIndex] && <span className="small muted">You have handed off your share.</span>}
         {isHeir && openable && secret === null && (
           <button
@@ -835,7 +844,16 @@ function VaultCard(p: {
           </button>
         )}
         {isHeir && !openable && !v.cancelled && (
-          <span className="small muted">{v.released ? "Waiting for two guardians to hand off." : "Opens after the owner misses a check-in and two guardians hand off."}</span>
+          <div className="locked-action">
+            <button className="btn small locked" disabled aria-describedby={`open-${v.id}`}>
+              <Lock /> Open vault
+            </button>
+            <span id={`open-${v.id}`} className="small muted">
+              {v.released
+                ? `Waiting for guardians: ${Math.min(v.handoffCount, v.threshold)} of ${v.threshold} have handed off.`
+                : `Release in ${duration(left)} if ${p.nameOf(v.owner)} stops checking in. Then ${v.threshold} guardians must hand off.`}
+            </span>
+          </div>
         )}
       </div>
 
@@ -854,6 +872,15 @@ function VaultCard(p: {
       )}
       {msg && <Status kind={msg.kind}>{msg.text}</Status>}
     </article>
+  );
+}
+
+function Lock() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden>
+      <rect x="3" y="7" width="10" height="7" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
   );
 }
 
