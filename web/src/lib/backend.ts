@@ -37,6 +37,19 @@ export interface CreateVaultArgs {
   sealed: SealedPieces;
 }
 
+/** What a wallet shows before a person approves a transaction. */
+export interface TxRequest {
+  /** "native": a QoreChain message (publishing a key). "evm": a call to the LastLight contract. */
+  lane: "native" | "evm";
+  title: string;
+  /** One plain sentence: what approving does. */
+  summary: string;
+  details: [string, string][];
+  from: Address;
+  /** True the first time this account calls the contract: the wallet also opens an EVM window. */
+  opensWindow?: boolean;
+}
+
 export interface Backend {
   readonly mode: "live" | "demo";
   readonly chainId: number;

@@ -807,6 +807,187 @@ small.key-missing {
   font-size: 13px;
 }
 
+/* demo wallet approval window */
+.wallet-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(5, 4, 3, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 72px max(var(--pad), calc((100vw - var(--max)) / 2 + var(--pad))) 20px;
+  animation: fade 0.2s ease-out;
+}
+.wallet {
+  width: 380px;
+  max-width: 100%;
+  max-height: calc(100svh - 92px);
+  overflow-y: auto;
+  background: #15110e;
+  border: 1px solid rgba(255, 179, 71, 0.25);
+  border-radius: 16px;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.4);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: drop 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+}
+.wallet-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.wallet-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 13px Inter, sans-serif;
+}
+.wallet-name i {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: var(--grad);
+  display: inline-block;
+}
+.wallet-tag {
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 99px;
+  padding: 2px 8px;
+}
+.wallet-site {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.wallet-acct {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.wallet-acct > div {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 179, 71, 0.15);
+  color: var(--amber-hi);
+  font-weight: 600;
+  flex: none;
+}
+.wallet h3 {
+  font-size: 20px;
+}
+.wallet-summary {
+  margin: 0;
+  font-size: 13.5px;
+  color: #d6ccbf;
+}
+.wallet-details {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.wallet-details > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  border-top: 1px solid var(--line);
+}
+.wallet-details > div:first-child {
+  border-top: 0;
+}
+.wallet-details dt {
+  color: var(--muted);
+  flex: none;
+}
+.wallet-details dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.wallet-note {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--amber);
+}
+.wallet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.wallet-steps {
+  list-style: none;
+  margin: 0;
+  padding: 4px 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13.5px;
+}
+.wallet-steps li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+}
+.wallet-steps li.now {
+  color: var(--amber-hi);
+}
+.wallet-steps li.done {
+  color: var(--ok);
+}
+.wallet-steps li.done svg path {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  animation: draw 0.35s ease-out forwards;
+}
+.wallet-steps .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  flex: none;
+}
+.wallet-steps .spin {
+  margin-top: 0;
+}
+.wallet-foot {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
 /* responsive */
 @media (max-width: 1080px) {
   .steps {
@@ -888,6 +1069,14 @@ small.key-missing {
   }
   .skip .btn {
     flex: 1;
+  }
+  .wallet-veil {
+    padding: 12px;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .wallet {
+    max-height: calc(100svh - 24px);
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -4,6 +4,7 @@ import { useAccount } from "wagmi";
 import { generateKemKeyPair, kemKeyFingerprint, equalBytes, type KemKeyPair } from "@last-light/crypto";
 import { toEvmAddress } from "@qorechain/evm";
 import { HeroCanvas } from "./HeroCanvas";
+import { ApproveModal, type PendingApproval } from "./ApproveModal";
 import { DemoBackend, PERSONAS } from "./lib/demo";
 import { LiveBackend, LIVE_CONTRACT, EXPLORER_TX } from "./lib/live";
 import { demoKeys, liveKeys, type KeyStore } from "./lib/keystore";
@@ -83,6 +84,15 @@ export function App() {
   useEffect(() => {
     setFeed([]);
   }, [mode]);
+
+  // Demo mode: every transaction waits for the person to approve it in the demo wallet window.
+  const [pending, setPending] = useState<PendingApproval | null>(null);
+  useEffect(() => {
+    demo.approver = (req) => new Promise<void>((resolve, reject) => setPending({ req, resolve, reject }));
+    return () => {
+      demo.approver = null;
+    };
+  }, [demo]);
 
   const nameOf = useCallback(
     (a: string) => (mode === "demo" ? PERSONAS.find((p) => sameAddress(p.address, a))?.name ?? short(a) : sameAddress(a, me) ? "You" : short(a)),
@@ -217,7 +227,7 @@ export function App() {
           {mode === "demo" && (
             <p className="note">
               Demo mode: the people are samples and the chain is simulated in your browser, but the encryption is the real ML-KEM-1024 code the
-              testnet app uses. Switch people above to play each role.
+              testnet app uses. Every transaction asks for approval the way a wallet does. Switch people above to play each role.
             </p>
           )}
 
@@ -273,6 +283,8 @@ export function App() {
           </div>
         </section>
       </main>
+
+      {pending && <ApproveModal key={pending.req.title + pending.req.from} pending={pending} onDone={() => setPending(null)} />}
 
       <footer className="footer">
         <span>Last Light. Built for QoreChain Build Before Q-Day, Encrypted Apps.</span>
@@ -891,12 +903,16 @@ function FeedPanel(p: { feed: FeedItem[]; mode: Mode }) {
               <span>{f.text}</span>
               <span className="small muted">
                 {f.at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                {f.tx && p.mode === "live" && (
+                {f.tx && (
                   <>
                     {" · "}
-                    <a href={`${EXPLORER_TX}${f.tx}`} target="_blank" rel="noreferrer">
-                      tx
-                    </a>
+                    {p.mode === "live" ? (
+                      <a href={`${EXPLORER_TX}${f.tx}`} target="_blank" rel="noreferrer">
+                        tx
+                      </a>
+                    ) : (
+                      <code title={f.tx}>{`${f.tx.slice(0, 8)}…`}</code>
+                    )}
                   </>
                 )}
               </span>
