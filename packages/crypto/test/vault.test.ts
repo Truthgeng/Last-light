@@ -3,6 +3,7 @@ import {
   assertValidKemPublicKey,
   contextString,
   generateKemKeyPair,
+  kemKeyPairFromSecret,
   guardianHandoff,
   heirRecover,
   joinKey,
@@ -52,6 +53,16 @@ describe("envelopes", () => {
     const env = seal(r.publicKey, utf8("hello"), "ctx");
     env[env.length - 1] ^= 1;
     expect(() => open(r.secretKey, env, "ctx")).toThrow();
+  });
+
+  it("derives the same key pair from the same secret, and a different one otherwise", () => {
+    const a = kemKeyPairFromSecret(utf8("one two three four five six"));
+    const b = kemKeyPairFromSecret(utf8("one two three four five six"));
+    const c = kemKeyPairFromSecret(utf8("one two three four five seven"));
+    expect(a.publicKey).toEqual(b.publicKey);
+    expect(a.publicKey).not.toEqual(c.publicKey);
+    const env = seal(a.publicKey, utf8("hi"), "x");
+    expect(fromUtf8(open(b.secretKey, env, "x"))).toBe("hi");
   });
 
   it("rejects keys the chain would reject", () => {

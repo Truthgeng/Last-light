@@ -3,7 +3,8 @@
  * real thing (same crypto core as live mode); only the chain is simulated.
  * The people are sample personas, and the clock can be skipped forward.
  */
-import { kemKeyFingerprint, randomBytes, toHex, type Handoff } from "@last-light/crypto";
+import { generateKemKeyPair, kemKeyFingerprint, randomBytes, toHex, type Handoff } from "@last-light/crypto";
+import type { KeyStore } from "./keystore";
 import { sameAddress, type Address, type Backend, type CreateVaultArgs, type SealedPieces, type TxRequest, type VaultView } from "./backend";
 
 export interface Persona {
@@ -84,7 +85,11 @@ export class DemoBackend implements Backend {
     return this.kem.get(a.toLowerCase()) ?? null;
   }
 
-  async publishKemKey(me: Address, pk: Uint8Array) {
+  async setUpKey(me: Address, keys: KeyStore, step: (t: string) => void) {
+    const kp = keys.load(me) ?? generateKemKeyPair();
+    keys.save(me, kp);
+    const pk = kp.publicKey;
+    step("Waiting for your approval…");
     const tx = await this.sign({
       lane: "native",
       from: me,

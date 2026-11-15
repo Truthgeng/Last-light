@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
-import { generateKemKeyPair, kemKeyFingerprint, equalBytes, type KemKeyPair } from "@last-light/crypto";
+import { kemKeyFingerprint, equalBytes, type KemKeyPair } from "@last-light/crypto";
 import { HeroCanvas } from "./HeroCanvas";
 import { ApproveModal, type PendingApproval } from "./ApproveModal";
 import { DemoBackend, PERSONAS } from "./lib/demo";
@@ -409,14 +409,11 @@ function KeyPanel(p: {
   const matches = onChain && local && equalBytes(onChain, local.publicKey);
 
   async function publish() {
-    setMsg({ kind: "busy", text: "Creating your ML-KEM-1024 key and asking QoreX to publish it…" });
+    setMsg({ kind: "busy", text: "Setting up your Last Light key…" });
     try {
-      const kp = local && !onChain ? local : generateKemKeyPair();
-      // Save first, so a key that reaches the chain is never lost from this device.
-      p.keys.save(p.me, kp);
-      setLocal(kp);
-      const tx = await p.backend.publishKemKey(p.me, kp.publicKey);
-      p.log("Published a Last Light key", tx);
+      const tx = await p.backend.setUpKey(p.me, p.keys, (text) => setMsg({ kind: "busy", text }));
+      setLocal(p.keys.load(p.me));
+      p.log("Published a Last Light key", tx.startsWith("0x") || tx.startsWith("demo") || /^[0-9A-F]{64}$/.test(tx) ? tx : undefined);
       setMsg({ kind: "ok", text: "Key published. Download a backup now: without it, a lost browser means a lost key." });
       p.refresh();
     } catch (e) {
@@ -472,6 +469,7 @@ function KeyPanel(p: {
             <button className="btn small ghost" onClick={backup}>
               Download backup
             </button>
+            <span className="small muted">The file holds your key's backup phrase. Keep it private.</span>
           </div>
         </>
       ) : onChain && !local ? (
@@ -503,7 +501,7 @@ function KeyPanel(p: {
           <p className="muted">
             {p.isOwnerPersona
               ? "Owners do not need a key to seal a vault. Heirs and guardians do, so they can receive their pieces."
-              : "To be named as an heir or guardian, publish an ML-KEM-1024 key. Your wallet asks you to approve it (twice for some QoreX accounts: once to publish, once to link it to your EVM address)."}
+              : "To be named as an heir or guardian, publish an ML-KEM-1024 key. Last Light creates a small key account for it in this browser. QoreX asks you to approve twice: 0.5 test QOR to fund that account, then a link to your address."}
           </p>
           <div className="row">
             <button className="btn small primary" onClick={publish}>

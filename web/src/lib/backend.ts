@@ -4,6 +4,7 @@
  * - demo.ts: the same rules, in memory, with sample people and a clock you can skip
  */
 import type { Handoff, VaultContext } from "@last-light/crypto";
+import type { KeyStore } from "./keystore";
 
 export type Address = `0x${string}`;
 
@@ -58,8 +59,12 @@ export interface Backend {
   now(): Promise<bigint>;
   /** The ML-KEM-1024 public key an address published, or null. */
   kemKeyOf(address: Address): Promise<Uint8Array | null>;
-  /** Publish `me`'s ML-KEM-1024 public key. Returns a transaction hash or demo id. */
-  publishKemKey(me: Address, publicKey: Uint8Array): Promise<string>;
+  /**
+   * Create `me`'s Last Light key (or finish setting it up), publish its ML-KEM-1024 public key
+   * on QoreChain and make it findable from `me`. Reports each step through `step`.
+   * Returns the last transaction hash.
+   */
+  setUpKey(me: Address, keys: KeyStore, step: (text: string) => void): Promise<string>;
   nextVaultId(owner: Address): Promise<bigint>;
   createVault(me: Address, args: CreateVaultArgs): Promise<string>;
   checkIn(me: Address, id: bigint): Promise<string>;

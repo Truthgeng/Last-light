@@ -71,8 +71,13 @@ pnpm dev                      # http://localhost:5180
 ```
 
 - **Demo mode** (`?demo`, or when no contract address is set): five sample people (owner, heir, three guardians), a simulated chain and a "skip time" button. The encryption is the real ML-KEM-1024 code.
-- **Testnet mode:** connect the QoreX wallet. Publishing your ML-KEM-1024 key is a native `MsgRegisterKEMKey`, hybrid-signed by QoreX (secp256k1 + ML-DSA-87). Vault actions are calls to the LastLight contract on the EVM lane.
-- Your ML-KEM secret key stays in this browser. The app asks you to download a backup, and can restore it on another device.
+- **Testnet mode:** connect the QoreX wallet. Vault actions are calls to the LastLight contract on the EVM lane, approved in QoreX.
+- **Key accounts.** QoreX keeps encryption keys to itself and does not let websites publish one, so each heir and guardian gets a *Last Light key account*: an eth-native QoreChain account created in their browser from a backup phrase. Setting it up:
+  1. QoreX sends it 0.5 test QOR (one approval).
+  2. It registers its own ML-DSA-87 key (`MsgRegisterPQCKeyV2` with proof of possession).
+  3. It publishes its ML-KEM-1024 key with `MsgRegisterKEMKey`, hybrid-signed (secp256k1 + ML-DSA-87), so the key is bound to an ML-DSA identity on chain.
+  4. QoreX links it to the person's address on the contract with `linkNative` (one approval).
+  Owners then find each person's key from their 0x address. The ML-KEM secret key derives from the key account's backup phrase and never leaves the browser; the app asks for a backup file.
 - The browser reads the chain's REST API through `/lcd` (a Vite proxy in development, a rewrite in `vercel.json` when hosted), because the public endpoint sends no CORS headers.
 
 ## Deploy to the QoreChain testnet

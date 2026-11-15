@@ -43,6 +43,20 @@ export function generateKemKeyPair(seed?: Uint8Array): KemKeyPair {
 }
 
 /**
+ * Deterministic ML-KEM-1024 key pair from a secret, such as a backup phrase.
+ * The same secret always gives the same key pair, so the secret is the backup.
+ */
+export function kemKeyPairFromSecret(secret: Uint8Array): KemKeyPair {
+  if (secret.length < 16) throw new Error("kemKeyPairFromSecret: secret too short");
+  const seed = hkdf(sha256, secret, utf8("last-light/v1"), utf8("ml-kem-1024 key seed"), 64);
+  try {
+    return generateKemKeyPair(seed);
+  } finally {
+    seed.fill(0);
+  }
+}
+
+/**
  * Same check the chain runs in `registerKemKey` (FIPS 203 modulus check):
  * exactly 1568 bytes, every 12-bit coefficient of t_hat below 3329, t_hat not all zero.
  * We run it before encrypting to a key read from the chain.
