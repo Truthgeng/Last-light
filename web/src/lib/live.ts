@@ -8,7 +8,7 @@
  *   (MsgRegisterKEMKey) that QoreX signs hybrid: secp256k1 + ML-DSA-87.
  * - KEM keys are read from the chain's registry over REST, through /lcd.
  */
-import { readContract, waitForTransactionReceipt, writeContract, getPublicClient, sendTransaction } from "wagmi/actions";
+import { readContract, waitForTransactionReceipt, getPublicClient, getAccount } from "wagmi/actions";
 import {
   EthNativeSigner,
   buildRegisterPqcKeyMsg,
@@ -21,7 +21,7 @@ import {
   type UnifiedAccount,
 } from "@qorechain/sdk";
 import { equalBytes, fromHex, toHex } from "@last-light/crypto";
-import { encodeAbiParameters, keccak256, parseEther, type Hex } from "viem";
+import { encodeAbiParameters, encodeFunctionData, keccak256, numberToHex, parseEther, type Hex } from "viem";
 import { kemFromMnemonic, type KeyStore } from "./keystore";
 import { lastLightAbi } from "./abi";
 import { config } from "./wagmi";
@@ -33,6 +33,26 @@ const MIN_KEY_ACCOUNT_UQOR = 250_000n;
 const NATIVE_FEE = { amount: [{ denom: "uqor", amount: "100000" }], gas: "800000" };
 
 const lcd = () => `${location.origin}${LCD}`;
+
+interface Eip1193 {
+  request(args: { method: string; params?: unknown[] }): Promise<unknown>;
+}
+
+/**
+ * Send a transaction with plain eth_sendTransaction on the connected wallet's own provider.
+ * Newer viem tries wallet_sendTransaction first, which QoreX does not support yet and refuses
+ * without the error code that would make viem fall back, so go straight to the standard method.
+ */
+async function sendTx(from: Address, tx: { to: Address; data?: Hex; value?: bigint }): Promise<Hex> {
+  const { connector, address } = getAccount(config);
+  if (!connector || !address) throw new Error("Connect QoreX first.");
+  if (address.toLowerCase() !== from.toLowerCase()) throw new Error("The connected account changed. Reload the page.");
+  const provider = (await connector.getProvider()) as Eip1193;
+  const params: Record<string, string> = { from: address, to: tx.to };
+  if (tx.data) params.data = tx.data;
+  if (tx.value) params.value = numberToHex(tx.value);
+  return (await provider.request({ method: "eth_sendTransaction", params: [params] })) as Hex;
+}
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function lcdJson<T>(path: string, init?: RequestInit): Promise<{ status: number; body: T }> {
@@ -116,14 +136,8 @@ export class LiveBackend implements Backend {
   }
 
   private async write(functionName: string, args: readonly unknown[], me: Address): Promise<string> {
-    const hash = await writeContract(config, {
-      address: this.contract,
-      abi: lastLightAbi,
-      functionName: functionName as never,
-      args: args as never,
-      account: me,
-      chainId: EVM_CHAIN_ID,
-    });
+    const data = encodeFunctionData({ abi: lastLightAbi, functionName: functionName as never, args: args as never });
+    const hash = await sendTx(me, { to: this.contract, data });
     const r = await waitForTransactionReceipt(config, { hash, chainId: EVM_CHAIN_ID });
     if (r.status !== "success") throw new Error(`The transaction failed on chain (${hash}).`);
     return hash;
@@ -178,12 +192,7 @@ export class LiveBackend implements Backend {
     const needsTxs = !pqc0.registered || !onChain0 || !equalBytes(onChain0, kem.publicKey);
     if (needsTxs && (await uqorBalance(acc.cosmos)) < MIN_KEY_ACCOUNT_UQOR) {
       step(`Approve in QoreX: send ${KEY_ACCOUNT_FUNDING} test QOR to your new Last Light key account. It pays that account's two setup fees.`);
-      const hash = await sendTransaction(config, {
-        to: acc.evm as Address,
-        value: parseEther(KEY_ACCOUNT_FUNDING),
-        account: me,
-        chainId: EVM_CHAIN_ID,
-      });
+      const hash = await sendTx(me, { to: acc.evm as Address, value: parseEther(KEY_ACCOUNT_FUNDING) });
       await waitForTransactionReceipt(config, { hash, chainId: EVM_CHAIN_ID });
       last = hash;
       step("Waiting for the funds to arrive…");
