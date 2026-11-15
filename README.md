@@ -45,6 +45,9 @@ Before release, the heir holds only Half A and each guardian holds only one shar
 
 ## The contract
 
+**Live on the QoreChain testnet:** [`0x9539b30246c300d3002b828beab9647a04789233`](https://explore.qore.network/address/0x9539b30246c300d3002b828beab9647a04789233) (EVM chain 9800, deployed in block 10105930, [deploy tx](https://explore.qore.network/tx/0xec0ed2b9821104a00e5ae266e767d93b612cdc3a1775f5aee5a88ac02ee4d34c)).
+
+
 `LastLight.sol` never sees anything readable. It records who the owner, heir and guardians are, tracks check-ins, decides when a vault is released, and accepts guardian handoffs only after release. The encrypted pieces (about 8 KB per vault) are published in events instead of storage, which keeps sealing cheap. The contract stores a hash of them, so the app can confirm that what it reads from the logs is exactly what was sealed.
 
 Each vault id is known before sealing (`nextVaultId`), because every encrypted piece is bound to its vault.

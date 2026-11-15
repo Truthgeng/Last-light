@@ -7,7 +7,7 @@
   "description": "Last Light: post-quantum crypto inheritance on QoreChain. Web app for owners, heirs and guardians.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },
