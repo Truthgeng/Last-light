@@ -45,7 +45,7 @@ Before release, the heir holds only Half A and each guardian holds only one shar
 
 ## The contract
 
-**Live on the QoreChain testnet:** [`0x9539b30246c300d3002b828beab9647a04789233`](https://explore.qore.network/address/0x9539b30246c300d3002b828beab9647a04789233) (EVM chain 9800, deployed in block 10105930, [deploy tx](https://explore.qore.network/tx/0xec0ed2b9821104a00e5ae266e767d93b612cdc3a1775f5aee5a88ac02ee4d34c)).
+**Live on the QoreChain testnet:** [`0x639432e38d6fd52aa76cc6398fa584d23b60888e`](https://explore.qore.network/address/0x639432e38d6fd52aa76cc6398fa584d23b60888e) (EVM chain 9800, deployed in block 10106943, [deploy tx](https://explore.qore.network/tx/0x067bca1d8b30fbb84c8faf6e2e7fdf15f9dc41ecafd13cc92b3b0792cd90aa84)).
 
 
 `LastLight.sol` never sees anything readable. It records who the owner, heir and guardians are, tracks check-ins, decides when a vault is released, and accepts guardian handoffs only after release. The encrypted pieces (about 8 KB per vault) are published in events instead of storage, which keeps sealing cheap. The contract stores a hash of them, so the app can confirm that what it reads from the logs is exactly what was sealed.
@@ -60,6 +60,8 @@ cd contracts && pnpm install && pnpm test         # contract, including a full s
 ```
 
 ## The web app
+
+**Live:** https://last-light-ashy.vercel.app
 
 ```sh
 cd web
