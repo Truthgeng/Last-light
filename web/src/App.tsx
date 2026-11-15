@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { kemKeyFingerprint, equalBytes, type KemKeyPair } from "@last-light/crypto";
-import { toEvmAddress } from "@qorechain/evm";
+import { toEvmAddress, toQorAddress } from "@qorechain/evm";
 import { HeroCanvas } from "./HeroCanvas";
 import { ApproveModal, type PendingApproval } from "./ApproveModal";
 import { DemoBackend, PERSONAS } from "./lib/demo";
@@ -33,6 +33,8 @@ function errText(e: unknown): string {
   const m = e instanceof Error ? e.message : String(e);
   if (/User rejected|rejected the request|denied/i.test(m)) return "You cancelled the request in your wallet.";
   if (/not yet supported/i.test(m)) return `QoreX said: ${m}. Update QoreX to the latest version and try again.`;
+  if (/insufficient balance|insufficient funds/i.test(m))
+    return "Not enough test QOR on this account's EVM side. Send it some from QoreX (the address is shown above the app), wait a few seconds, then try again.";
   if (/not been authorized|unauthorized|4100/i.test(m))
     return "QoreX only signs contract transactions from an Ethereum-type (coin type 60) account. This account is a classic QoreChain account. In QoreX, add or switch to an Ethereum-type account, fund it with test QOR, then reload.";
   return m.split("\n")[0].slice(0, 300);
@@ -299,30 +301,48 @@ export function App() {
 
 /* ------------------------------------------------------------------ */
 
-/** Warns when the connected QoreX account is a classic one, which QoreX will not let sign contract calls. */
+/**
+ * Classic QoreX accounts keep their QOR on the native (qor1) side, while contract transactions are
+ * paid from the separate EVM side. Show that side's address and balance so it can be funded.
+ */
 function AccountKind(p: { address?: string }) {
-  const [classic, setClassic] = useState<string | null>(null);
+  const [info, setInfo] = useState<{ native: string; evmQor: string; uqor: bigint } | null>(null);
   useEffect(() => {
     let live = true;
-    setClassic(null);
+    setInfo(null);
     const native = (window as unknown as { qorex?: { native?: { getKey(c: string): Promise<{ bech32Address: string }> } } }).qorex?.native;
     if (!p.address || !native) return;
-    native
-      .getKey("qorechain-diana")
-      .then((k) => {
-        if (live && toEvmAddress(k.bech32Address) !== p.address!.toLowerCase()) setClassic(k.bech32Address);
-      })
-      .catch(() => {});
+    const load = async () => {
+      const k = await native.getKey("qorechain-diana");
+      if (toEvmAddress(k.bech32Address) === p.address!.toLowerCase()) return;
+      const evmQor = toQorAddress(p.address!);
+      const r = await fetch(`/lcd/cosmos/bank/v1beta1/balances/${evmQor}/by_denom?denom=uqor`).then((x) => x.json()).catch(() => ({}));
+      if (live) setInfo({ native: k.bech32Address, evmQor, uqor: BigInt((r as { balance?: { amount?: string } }).balance?.amount ?? "0") });
+    };
+    void load().catch(() => {});
+    const t = setInterval(() => void load().catch(() => {}), 15000);
     return () => {
       live = false;
+      clearInterval(t);
     };
   }, [p.address]);
-  if (!classic) return null;
+  if (!info) return null;
+  const qor = Number(info.uqor) / 1e6;
+  const low = info.uqor < 1_000_000n;
   return (
-    <div className="status err acct-warn" role="alert">
+    <div className={`status ${low ? "err" : "info"} acct-warn`} role={low ? "alert" : "status"}>
       <span>
-        This QoreX account is a classic QoreChain account (<code>{short(classic)}</code>), so QoreX will not sign contract transactions from
-        it. Switch to an Ethereum-type (coin type 60) account in QoreX, fund it with test QOR, then reload.
+        This QoreX account keeps two balances: its native side (<code>{short(info.native)}</code>) and its EVM side, which pays for
+        Last Light's contract transactions. EVM side balance: <b>{qor.toLocaleString(undefined, { maximumFractionDigits: 3 })} QOR</b>.
+        {low && (
+          <>
+            {" "}
+            Send it at least 1 test QOR from QoreX, to <code>{info.evmQor}</code>{" "}
+            <button className="btn small ghost" type="button" onClick={() => void navigator.clipboard?.writeText(info.evmQor).catch(() => {})}>
+              Copy
+            </button>
+          </>
+        )}
       </span>
     </div>
   );

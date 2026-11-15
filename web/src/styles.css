@@ -1118,3 +1118,9 @@ small.key-missing {
     scroll-behavior: auto;
   }
 }
+.status.info {
+  color: var(--muted);
+}
+.acct-warn code {
+  word-break: break-all;
+}
