@@ -366,6 +366,10 @@ h3 {
 .live-bar {
   justify-content: space-between;
 }
+.acct-warn {
+  flex-basis: 100%;
+  order: 3;
+}
 .people {
   display: flex;
   gap: 6px;

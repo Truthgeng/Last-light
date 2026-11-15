@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { kemKeyFingerprint, equalBytes, type KemKeyPair } from "@last-light/crypto";
+import { toEvmAddress } from "@qorechain/evm";
 import { HeroCanvas } from "./HeroCanvas";
 import { ApproveModal, type PendingApproval } from "./ApproveModal";
 import { DemoBackend, PERSONAS } from "./lib/demo";
@@ -32,6 +33,8 @@ function errText(e: unknown): string {
   const m = e instanceof Error ? e.message : String(e);
   if (/User rejected|rejected the request|denied/i.test(m)) return "You cancelled the request in your wallet.";
   if (/not yet supported/i.test(m)) return `QoreX said: ${m}. Update QoreX to the latest version and try again.`;
+  if (/not been authorized|unauthorized|4100/i.test(m))
+    return "QoreX only signs contract transactions from an Ethereum-type (coin type 60) account. This account is a classic QoreChain account. In QoreX, add or switch to an Ethereum-type account, fund it with test QOR, then reload.";
   return m.split("\n")[0].slice(0, 300);
 }
 
@@ -215,6 +218,7 @@ export function App() {
               <DemoBar demo={demo} persona={persona} setPersona={setPersona} refresh={refresh} log={log} />
             ) : (
               <div className="live-bar">
+                <AccountKind address={address} />
                 <span className="muted small">
                   Contract <code>{short(LIVE_CONTRACT)}</code>
                 </span>
@@ -294,6 +298,35 @@ export function App() {
 }
 
 /* ------------------------------------------------------------------ */
+
+/** Warns when the connected QoreX account is a classic one, which QoreX will not let sign contract calls. */
+function AccountKind(p: { address?: string }) {
+  const [classic, setClassic] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    setClassic(null);
+    const native = (window as unknown as { qorex?: { native?: { getKey(c: string): Promise<{ bech32Address: string }> } } }).qorex?.native;
+    if (!p.address || !native) return;
+    native
+      .getKey("qorechain-diana")
+      .then((k) => {
+        if (live && toEvmAddress(k.bech32Address) !== p.address!.toLowerCase()) setClassic(k.bech32Address);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [p.address]);
+  if (!classic) return null;
+  return (
+    <div className="status err acct-warn" role="alert">
+      <span>
+        This QoreX account is a classic QoreChain account (<code>{short(classic)}</code>), so QoreX will not sign contract transactions from
+        it. Switch to an Ethereum-type (coin type 60) account in QoreX, fund it with test QOR, then reload.
+      </span>
+    </div>
+  );
+}
 
 function Mark() {
   return (
