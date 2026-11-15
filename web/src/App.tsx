@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { generateKemKeyPair, kemKeyFingerprint, equalBytes, type KemKeyPair } from "@last-light/crypto";
-import { toEvmAddress } from "@qorechain/evm";
 import { HeroCanvas } from "./HeroCanvas";
 import { ApproveModal, type PendingApproval } from "./ApproveModal";
 import { DemoBackend, PERSONAS } from "./lib/demo";
@@ -53,9 +52,9 @@ function periodLabel(p: bigint): string {
 
 function normalizeAddress(input: string): Address {
   const s = input.trim();
-  if (/^qor1[0-9a-z]{38,}$/.test(s)) return toEvmAddress(s) as Address;
   if (/^0x[0-9a-fA-F]{40}$/.test(s)) return s.toLowerCase() as Address;
-  throw new Error(`"${s || "(empty)"}" is not a 0x or qor1 address.`);
+  if (/^qor1/.test(s)) throw new Error(`Use the 0x address the person shares from their Last Light key panel, not a qor1 address.`);
+  throw new Error(`"${s || "(empty)"}" is not a 0x address.`);
 }
 
 /* ------------------------------------------------------------------ */
@@ -462,6 +461,13 @@ function KeyPanel(p: {
             <span className="muted small">Fingerprint</span>
             <code>{kemKeyFingerprint(onChain!)}</code>
           </div>
+          <div className="fp share">
+            <span className="muted small">Address to share with an owner</span>
+            <code title={p.me}>{short(p.me)}</code>
+            <button className="btn small ghost" type="button" onClick={() => void navigator.clipboard?.writeText(p.me).catch(() => {})}>
+              Copy
+            </button>
+          </div>
           <div className="row">
             <button className="btn small ghost" onClick={backup}>
               Download backup
@@ -497,7 +503,7 @@ function KeyPanel(p: {
           <p className="muted">
             {p.isOwnerPersona
               ? "Owners do not need a key to seal a vault. Heirs and guardians do, so they can receive their pieces."
-              : "To be named as an heir or guardian, publish an ML-KEM-1024 key. It takes one hybrid-signed transaction."}
+              : "To be named as an heir or guardian, publish an ML-KEM-1024 key. Your wallet asks you to approve it (twice for some QoreX accounts: once to publish, once to link it to your EVM address)."}
           </p>
           <div className="row">
             <button className="btn small primary" onClick={publish}>
@@ -627,7 +633,7 @@ function AddrInput(p: { value: string; onChange: (v: string) => void; backend: B
   }, [p.value, p.backend, p.tick, p.nameOf]);
   return (
     <>
-      <input value={p.value} onChange={(e) => p.onChange(e.target.value)} placeholder="0x… or qor1…" spellCheck={false} autoComplete="off" />
+      <input value={p.value} onChange={(e) => p.onChange(e.target.value)} placeholder="0x… address" spellCheck={false} autoComplete="off" />
       {state && <small className={state.ok ? "key-ok" : "key-missing"}>{state.text}</small>}
     </>
   );

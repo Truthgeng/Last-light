@@ -167,6 +167,15 @@ describe("LastLight", async () => {
     assert.deepEqual(await ll.read.vaultsOf([stranger.account.address]), []);
   });
 
+  it("lets an account link the native address of its key", async () => {
+    const ll = await deploy();
+    const q = "qor19zaw0dv5wwz4v6kmrmx4pfzanrxuar086rr504";
+    await ll.write.linkNative([q], { account: heir.account });
+    assert.equal(await ll.read.nativeAddressOf([heir.account.address]), q);
+    assert.equal(await ll.read.nativeAddressOf([g1.account.address]), "");
+    await viem.assertions.revertWithCustomError(ll.write.linkNative(["0x1234"], { account: heir.account }), ll, "BadNativeAddress");
+  });
+
   it("rejects bad setups", async () => {
     const ll = await deploy();
     const secret = toHex(new Uint8Array(1052)) as Hex;

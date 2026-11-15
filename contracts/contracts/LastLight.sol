@@ -37,6 +37,12 @@ contract LastLight {
         address[] guardians;
     }
 
+    /// @notice For accounts whose native (qor1) and EVM (0x) sides use different keys, as QoreX's
+    ///         classic accounts do: the native address where this EVM account published its
+    ///         ML-KEM-1024 key. Set by the EVM account itself. A false claim only makes pieces be
+    ///         encrypted to someone else's key, which the claimer then cannot open.
+    mapping(address => string) public nativeAddressOf;
+
     mapping(uint256 => Vault) private vaults;
     mapping(address => uint256) public nonces;
     mapping(uint256 => mapping(address => bool)) public handedOff;
@@ -55,6 +61,7 @@ contract LastLight {
     event CheckedIn(uint256 indexed id, uint64 at, uint64 releaseAt);
     event Cancelled(uint256 indexed id);
     event Handoff(uint256 indexed id, address indexed guardian, bytes envelope, uint8 handoffCount);
+    event NativeLinked(address indexed account, string nativeAddress);
 
     error NotOwner();
     error NotGuardian();
@@ -67,6 +74,17 @@ contract LastLight {
     error NotReleased();
     error VaultCancelled();
     error AlreadyHandedOff();
+    error BadNativeAddress();
+
+    /// @notice Record the native qor1 address that holds this account's ML-KEM-1024 key.
+    function linkNative(string calldata nativeAddress) external {
+        bytes calldata b = bytes(nativeAddress);
+        if (b.length < 39 || b.length > 90 || b[0] != "q" || b[1] != "o" || b[2] != "r" || b[3] != "1") {
+            revert BadNativeAddress();
+        }
+        nativeAddressOf[msg.sender] = nativeAddress;
+        emit NativeLinked(msg.sender, nativeAddress);
+    }
 
     /// @notice The id the owner's next vault will get. The browser needs it before
     ///         sealing, because every envelope is bound to its vault id.

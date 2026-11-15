@@ -12,6 +12,11 @@ export const lastLightAbi = [
   },
   {
     "inputs": [],
+    "name": "BadNativeAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "BadParty",
     "type": "error"
   },
@@ -122,6 +127,25 @@ export const lastLightAbi = [
       }
     ],
     "name": "Handoff",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "nativeAddress",
+        "type": "string"
+      }
+    ],
+    "name": "NativeLinked",
     "type": "event"
   },
   {
@@ -474,6 +498,38 @@ export const lastLightAbi = [
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "nativeAddress",
+        "type": "string"
+      }
+    ],
+    "name": "linkNative",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "nativeAddressOf",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
       }
     ],
     "stateMutability": "view",

@@ -72,19 +72,22 @@ export class LiveBackend implements Backend {
     return b.timestamp;
   }
 
-  kemKeyOf(a: Address) {
-    return readKemKey(a);
+  /**
+   * An account's ML-KEM-1024 key. Eth-native accounts publish it under their own 0x address.
+   * Classic QoreX accounts (different keys on the native and EVM sides) publish it under their
+   * qor1 address and link that address to their EVM side in the contract.
+   */
+  async kemKeyOf(a: Address) {
+    const direct = await readKemKey(a);
+    if (direct) return direct;
+    const native = await this.read<string>("nativeAddressOf", [a]);
+    return native ? readKemKey(native) : null;
   }
 
   async publishKemKey(me: Address, publicKey: Uint8Array) {
     const native = getQorexNative();
     if (!native) throw new Error("QoreX was not found. Install the QoreX extension, switch it to Testnet and reload.");
     const key = await native.getKey(NATIVE_CHAIN_ID);
-    if (toEvmAddress(key.bech32Address) !== me.toLowerCase()) {
-      throw new Error(
-        `QoreX's active account (${key.bech32Address}) is not the connected one (${me}). Switch accounts in QoreX and reload.`,
-      );
-    }
     const encoded = qorechainRegistry().encode(msg.pqc.registerKemKey({ sender: key.bech32Address, publicKey }));
     const r = await qorexSignAndBroadcast({
       chainId: NATIVE_CHAIN_ID,
@@ -92,6 +95,11 @@ export class LiveBackend implements Backend {
       memo: "Last Light: publish ML-KEM-1024 key",
     });
     if (r.code !== 0) throw new Error(`QoreChain refused the key (code ${r.code}, tx ${r.txHash}).`);
+    // Different keys on the two sides: tell the contract where this account's key lives.
+    if (toEvmAddress(key.bech32Address) !== me.toLowerCase()) {
+      const current = await this.read<string>("nativeAddressOf", [me]);
+      if (current !== key.bech32Address) await this.write("linkNative", [key.bech32Address], me);
+    }
     return r.txHash;
   }
 

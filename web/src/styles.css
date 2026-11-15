@@ -471,6 +471,13 @@ h3 {
 .fp code {
   color: var(--amber-hi);
 }
+.fp.share {
+  align-items: center;
+}
+.fp.share code {
+  margin-left: auto;
+  color: var(--ink);
+}
 
 label {
   display: flex;
