@@ -756,6 +756,10 @@ small.key-missing {
   word-break: break-word;
   transition: filter 0.3s;
 }
+.next-step {
+  margin: 0;
+  color: #d6ccbf;
+}
 .secret-text.blur {
   filter: blur(6px);
   user-select: none;

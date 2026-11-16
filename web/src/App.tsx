@@ -917,6 +917,10 @@ function VaultCard(p: {
       {secret !== null && (
         <div className="secret">
           <div className={`secret-text ${shown ? "" : "blur"}`}>{secret}</div>
+          <p className="small next-step">
+            What to do now: import this into a wallet you control and move the funds to a new wallet straight away. Then the old
+            phrase protects nothing, wherever copies of it end up.
+          </p>
           <div className="row">
             <button className="btn small ghost" onClick={() => setShown((s) => !s)}>
               {shown ? "Hide" : "Show"}
