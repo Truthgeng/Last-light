@@ -290,14 +290,41 @@ export class LiveBackend implements Backend {
     };
   }
 
+  /**
+   * Find this vault's events, newest blocks first, in chunks: the RPC limits how many blocks one
+   * eth_getLogs may cover. Stops once `enough` matching events are found. Chunk size shrinks if
+   * the RPC refuses a range.
+   */
+  private async findEvents(eventName: "VaultSealed" | "Handoff", id: bigint, enough: number) {
+    const client = this.client();
+    const latest = await client.getBlockNumber();
+    let chunk = 5000n;
+    let to = latest;
+    const found: { args: unknown }[] = [];
+    while (to >= DEPLOY_BLOCK && found.length < enough) {
+      const from = to - chunk + 1n > DEPLOY_BLOCK ? to - chunk + 1n : DEPLOY_BLOCK;
+      try {
+        const logs = await client.getContractEvents({
+          address: this.contract,
+          abi: lastLightAbi,
+          eventName,
+          args: { id },
+          fromBlock: from,
+          toBlock: to,
+        });
+        found.push(...(logs as unknown as { args: unknown }[]));
+        if (from === 0n) break;
+        to = from - 1n;
+      } catch (e) {
+        if (chunk <= 250n) throw e;
+        chunk /= 2n;
+      }
+    }
+    return found;
+  }
+
   async sealed(id: bigint): Promise<SealedPieces> {
-    const logs = await this.client().getContractEvents({
-      address: this.contract,
-      abi: lastLightAbi,
-      eventName: "VaultSealed",
-      args: { id },
-      fromBlock: DEPLOY_BLOCK,
-    });
+    const logs = await this.findEvents("VaultSealed", id, 1);
     if (logs.length !== 1) throw new Error("Could not find this vault's sealed pieces in the chain logs.");
     const a = logs[0].args as { encryptedSecret: Hex; heirEnvelope: Hex; guardianEnvelopes: readonly Hex[] };
     // Check the logs against the hash the contract stored when the vault was sealed.
@@ -317,13 +344,8 @@ export class LiveBackend implements Backend {
   }
 
   async handoffs(id: bigint) {
-    const logs = await this.client().getContractEvents({
-      address: this.contract,
-      abi: lastLightAbi,
-      eventName: "Handoff",
-      args: { id },
-      fromBlock: DEPLOY_BLOCK,
-    });
+    const v = await this.read<{ handoffCount: number }>("getVault", [id]);
+    const logs = await this.findEvents("Handoff", id, Number(v.handoffCount));
     return logs.map((l) => {
       const a = l.args as { guardian: Address; envelope: Hex };
       return { guardianAddress: a.guardian, envelope: fromHex(a.envelope) };
