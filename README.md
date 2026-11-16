@@ -1,6 +1,10 @@
 # Last Light
 
+![Last Light](docs/cover.png)
+
 Post-quantum crypto inheritance on QoreChain.
+
+**Try it:** https://last-light-ashy.vercel.app (open with `?demo` to run the whole flow in your browser with sample people, no wallet needed)
 
 When someone dies holding crypto and nobody has the keys, the money is gone for good. Last Light lets you leave your seed phrase (or any wallet instructions) to someone you trust, so they can open it only after you stop checking in. Nobody can open it before that. Not the person you leave it to, not the people who help release it, and not anyone reading the chain.
 
@@ -95,6 +99,12 @@ pnpm deploy:testnet
 - **Collusion.** If the heir and two guardians combine their pieces early, they can open the vault. One guardian working with the heir is not enough. Choose guardians who do not all answer to the heir.
 - **Unreachable guardians.** If two of the three guardians are unreachable at release, the heir has to wait for one of them.
 - **Lost keys.** If the heir loses their ML-KEM secret key, they cannot open the vault. The app asks every user to back up their key.
+- **A compromised device.** Encryption happens in the browser, so the owner's browser and device must be trusted at the moment of sealing.
+- **Testnet only.** This is a hackathon build on the QoreChain testnet. Use a test phrase. Never put a real seed phrase in it.
+
+## How this was built
+
+See [AI_USAGE.md](AI_USAGE.md).
 
 ## License
 
