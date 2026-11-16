@@ -622,7 +622,7 @@ function SealPanel(p: {
     <form className="glass panel seal-panel" onSubmit={submit}>
       <div className="panel-head">
         <h3>Seal a vault</h3>
-        <span className="pill">You are the owner</span>
+        <span className="pill">Your own vault</span>
       </div>
       <label>
         <span>Heir</span>
