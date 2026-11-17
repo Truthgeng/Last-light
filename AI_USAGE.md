@@ -2,6 +2,13 @@
 
 Last Light was built by Truth (GitHub: Truthgeng) with Claude, Anthropic's AI assistant, as a coding partner.
 
+## Workflow
+
+- Truth described the product and made the decisions. Claude, running as a coding agent in a cloud workspace, wrote the code, ran the tests and pushed to this repository.
+- Anything that needed Truth's own machine or wallets (deploying the contract, registering keys, approving transactions in QoreX) Truth ran himself, using commands Claude gave him. He sent back the output and any errors.
+- Each error from live testing went back to Claude, which found the cause and changed the code. Truth then tested again on testnet. Most of the design changes listed below came out of this loop.
+- Claude never held a wallet or a private key. The deployer key stays in Truth's local `contracts/.env`, which is not committed.
+
 ## What Truth did
 
 - Chose the problem, the name and the product direction: a crypto inheritance vault with three guardians, any two of whom release it to the heir.

@@ -12,6 +12,15 @@ A secret like this has to stay safe for years, maybe decades. Data encrypted tod
 
 Built for the QoreChain **Build Before Q-Day** Developer Fest, Encrypted Apps category.
 
+## Encrypted Apps requirements
+
+| Requirement | Where it is |
+|---|---|
+| ML-KEM-1024 encryption | Every envelope in `packages/crypto` (`@noble/post-quantum` ml_kem1024, then HKDF-SHA256 and AES-256-GCM). |
+| Registered recipient keys | Heirs and guardians publish their ML-KEM-1024 public key on QoreChain with `MsgRegisterKEMKey`. Owners encrypt only to keys read from the chain (`/qorechain/pqc/v1/kem/{address}`). |
+| ML-DSA key binding | Each key account registers an ML-DSA-87 key with proof of possession, and the KEM key is published in a hybrid-signed transaction (secp256k1 + ML-DSA-87). |
+| Client-side encryption and decryption | Sealing, guardian handoffs and recovery all run in the browser. The contract and the chain only ever hold ciphertext. |
+
 ## How it works
 
 There are three roles:
@@ -101,6 +110,16 @@ pnpm deploy:testnet
 - **Lost keys.** If the heir loses their ML-KEM secret key, they cannot open the vault. The app asks every user to back up their key.
 - **A compromised device.** Encryption happens in the browser, so the owner's browser and device must be trusted at the moment of sealing.
 - **Testnet only.** This is a hackathon build on the QoreChain testnet. Use a test phrase. Never put a real seed phrase in it.
+
+## Credits
+
+Built during the event. These open source libraries and QoreChain kits are used:
+
+- QoreChain: `@qorechain/sdk`, `@qorechain/evm`, `@qorechain/qorex-rainbowkit`, `@qorechain/qorex-types`, and the QoreX wallet
+- Cryptography: `@noble/post-quantum`, `@noble/ciphers`, `@noble/hashes` (Paul Miller)
+- Contracts: Hardhat and the Nomic Foundation Hardhat plugins, `viem`, `@cosmjs/stargate`
+- Web app: React, Vite, wagmi, RainbowKit, TanStack Query
+- Tests: Vitest
 
 ## How this was built
 
