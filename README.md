@@ -4,6 +4,8 @@
 
 Post-quantum crypto inheritance on QoreChain.
 
+**Demo video:** [watch on X](https://x.com/heistruthX/status/2122555328923636058) (1:34, with subtitles)
+
 **Try it:** https://last-light-ashy.vercel.app (open with `?demo` to run the whole flow in your browser with sample people, no wallet needed)
 
 When someone dies holding crypto and nobody has the keys, the money is gone for good. Last Light lets you leave your seed phrase (or any wallet instructions) to someone you trust, so they can open it only after you stop checking in. Nobody can open it before that. Not the person you leave it to, not the people who help release it, and not anyone reading the chain.
