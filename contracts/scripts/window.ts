@@ -37,7 +37,6 @@ import {
   type UnifiedAccount,
 } from "@qorechain/sdk";
 import { evmWindowCost, evmWindowStatus } from "@qorechain/evm";
-import { generateKemKeyPair } from "../../packages/crypto/src/index.js";
 
 const NETWORKS = {
   testnet: {
@@ -184,7 +183,8 @@ async function kem(): Promise<void> {
     // Not found: publish one.
   }
   // Only the public half goes on chain. This account is a deployer, so the secret half is not kept.
-  const { publicKey } = generateKemKeyPair();
+  const { ml_kem1024 } = await import("@noble/post-quantum/ml-kem.js");
+  const { publicKey } = ml_kem1024.keygen();
   const m = qmsg.pqc.registerKemKey({ sender: acc.cosmos, publicKey });
   console.log(`kem key published: ${await broadcast(acc, "hybrid", [m])}`);
 }
