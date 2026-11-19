@@ -11,6 +11,8 @@
  *   pnpm window register   register the account's ML-DSA-87 key (once)
  *   pnpm window open       open a window sized for a few deploys
  *   pnpm window recovery-code   print a new PQC recovery code (QRC1)
+ *   pnpm window kem      publish an ML-KEM-1024 encryption key for the account (QoreSeal key registry)
+ *   pnpm window swap     swap 0.1 QOR in a pool of the native AMM
  *
  * The account comes from QORE_MNEMONIC (BIP-44 m/44'/60'/0'/0/0), whose
  * ML-DSA-87 key is derived from the same mnemonic, or, if unset, from
@@ -20,6 +22,9 @@
 import { StargateClient } from "@cosmjs/stargate";
 import {
   EthNativeSigner,
+  connectQueryClients,
+  fetchKemKey,
+  msg as qmsg,
   buildRegisterPqcKeyMsg,
   deriveUnifiedAccount,
   fetchPqcStatus,
@@ -32,6 +37,7 @@ import {
   type UnifiedAccount,
 } from "@qorechain/sdk";
 import { evmWindowCost, evmWindowStatus } from "@qorechain/evm";
+import { generateKemKeyPair } from "../../packages/crypto/src/index.js";
 
 const NETWORKS = {
   testnet: {
@@ -165,11 +171,56 @@ async function recoveryCode(): Promise<void> {
   console.log("Use the same code every time: a new code gives the account a different ML-DSA-87 key.");
 }
 
-const commands: Record<string, () => Promise<void>> = { status, register, open, "recovery-code": recoveryCode };
+async function kem(): Promise<void> {
+  const net = network();
+  const acc = await account();
+  try {
+    const existing = await fetchKemKey({ rest: net.rest, address: acc.cosmos });
+    if (existing.found) {
+      console.log("The account already has an encryption key published; nothing to do.");
+      return;
+    }
+  } catch {
+    // Not found: publish one.
+  }
+  // Only the public half goes on chain. This account is a deployer, so the secret half is not kept.
+  const { publicKey } = generateKemKeyPair();
+  const m = qmsg.pqc.registerKemKey({ sender: acc.cosmos, publicKey });
+  console.log(`kem key published: ${await broadcast(acc, "hybrid", [m])}`);
+}
+
+async function swap(): Promise<void> {
+  const net = network();
+  const acc = await account();
+  const stargate = await StargateClient.connect(net.rpc);
+  let pools;
+  try {
+    const q = connectQueryClients((stargate as unknown as { forceGetCometClient(): never }).forceGetCometClient());
+    pools = (await q.amm.pools({})).pools;
+  } finally {
+    stargate.disconnect();
+  }
+  const pool = pools.find(
+    (p) => (p.tokenA === "uqor" || p.tokenB === "uqor") && BigInt(p.reserveA || "0") > 0n && BigInt(p.reserveB || "0") > 0n && !/pause/i.test(p.status),
+  );
+  if (!pool) {
+    console.log("No open pool with QOR found. Pools on chain:");
+    for (const p of pools) console.log(`  #${p.id} ${p.tokenA}/${p.tokenB} ${p.status}`);
+    process.exitCode = 1;
+    return;
+  }
+  const denomOut = pool.tokenA === "uqor" ? pool.tokenB : pool.tokenA;
+  const amount = process.env.QORE_SWAP_UQOR ?? "100000";
+  console.log(`pool #${pool.id}: ${pool.tokenA}/${pool.tokenB}; swapping ${amount} uqor for ${denomOut}`);
+  const m = qmsg.amm.swapExactIn({ sender: acc.cosmos, poolId: pool.id, tokenIn: { denom: "uqor", amount }, denomOut, minOut: "1" });
+  console.log(`swapped: ${await broadcast(acc, "hybrid", [m])}`);
+}
+
+const commands: Record<string, () => Promise<void>> = { status, register, open, kem, swap, "recovery-code": recoveryCode };
 const cmd = process.argv[2] ?? "status";
 const run = commands[cmd];
 if (!run) {
-  console.error(`Unknown command "${cmd}". Use: status | register | open | recovery-code`);
+  console.error(`Unknown command "${cmd}". Use: status | register | open | kem | swap | recovery-code`);
   process.exit(1);
 }
 run().catch((err: unknown) => {
