@@ -61,7 +61,9 @@ Before release, the heir holds only Half A and each guardian holds only one shar
 
 ## The contract
 
-**Live on the QoreChain testnet:** [`0x639432e38d6fd52aa76cc6398fa584d23b60888e`](https://explore.qore.network/address/0x639432e38d6fd52aa76cc6398fa584d23b60888e) (EVM chain 9800, deployed in block 10106943, [deploy tx](https://explore.qore.network/tx/0x067bca1d8b30fbb84c8faf6e2e7fdf15f9dc41ecafd13cc92b3b0792cd90aa84)).
+**Live on the QoreChain testnet:** [`0x64a99db7aff127a7994b066823cb9d1fa0946016`](https://explore.qore.network/address/0x64a99db7aff127a7994b066823cb9d1fa0946016) (`qor1vj5emda07yn60x2tqe5z8juar7sfgcqkjx66lm`, EVM chain 9800, deployed in block 10399141 with `requirePqcKey = true`, [deploy tx](https://explore.qore.network/tx/0x523cc4084641b4a65694202b4e2d5975a226cef9b037045e93c23935f625c7ef)).
+
+The first version, without the PQC precompile check, is at [`0x639432e38d6fd52aa76cc6398fa584d23b60888e`](https://explore.qore.network/address/0x639432e38d6fd52aa76cc6398fa584d23b60888e) (block 10106943). The demo video was recorded on it.
 
 
 `LastLight.sol` never sees anything readable. It records who the owner, heir and guardians are, tracks check-ins, decides when a vault is released, and accepts guardian handoffs only after release. The encrypted pieces (about 8 KB per vault) are published in events instead of storage, which keeps sealing cheap. The contract stores a hash of them, so the app can confirm that what it reads from the logs is exactly what was sealed.
