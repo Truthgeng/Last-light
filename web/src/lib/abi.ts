@@ -1,6 +1,17 @@
 // Generated from contracts/artifacts (LastLight.sol). Rebuild with: pnpm --dir ../contracts build
 export const lastLightAbi = [
   {
+    "inputs": [
+      {
+        "internalType": "bool",
+        "name": "requirePqcKey_",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
     "inputs": [],
     "name": "AlreadyHandedOff",
     "type": "error"
@@ -28,6 +39,11 @@ export const lastLightAbi = [
   {
     "inputs": [],
     "name": "BadThreshold",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NoPqcKey",
     "type": "error"
   },
   {
@@ -146,6 +162,31 @@ export const lastLightAbi = [
       }
     ],
     "name": "NativeLinked",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "registered",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "algorithmId",
+        "type": "uint8"
+      }
+    ],
+    "name": "PqcKeyChecked",
     "type": "event"
   },
   {
@@ -295,6 +336,19 @@ export const lastLightAbi = [
         "internalType": "uint64",
         "name": "",
         "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PQC_KEY_STATUS",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -576,6 +630,30 @@ export const lastLightAbi = [
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "pqcKeyOf",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "registered",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint8",
+        "name": "algorithmId",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "id",
         "type": "uint256"
@@ -587,6 +665,19 @@ export const lastLightAbi = [
         "internalType": "uint64",
         "name": "",
         "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "requirePqcKey",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",

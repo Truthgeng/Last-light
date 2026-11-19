@@ -30,8 +30,18 @@ describe("LastLight", async () => {
   const kem = (addr: string) => keys.get(addr.toLowerCase())!;
   const recipient = (w: typeof heir) => ({ address: w.account.address, kemPublicKey: kem(w.account.address).publicKey });
 
-  async function deploy() {
-    return viem.deployContract("LastLight");
+  const PQC = "0x0000000000000000000000000000000000000a02";
+  /** Put a stand-in PQC key status precompile at its fixed address and mark accounts as registered. */
+  async function mockPqc(registered: { account: { address: Hex } }[]) {
+    const m = await viem.deployContract("MockPqcKeyStatus");
+    await networkHelpers.setCode(PQC, (await publicClient.getCode({ address: m.address }))!);
+    const at = await viem.getContractAt("MockPqcKeyStatus", PQC);
+    for (const w of registered) await at.write.set([w.account.address, true]);
+  }
+
+  async function deploy(requirePqcKey = true) {
+    await mockPqc([owner, heir, g1, g2, g3]);
+    return viem.deployContract("LastLight", [requirePqcKey]);
   }
 
   /** What the owner's browser does: predict the vault id, seal every piece to it, send createVault. */
@@ -192,5 +202,41 @@ describe("LastLight", async () => {
     await viem.assertions.revertWithCustomError(call(heir.account.address, [gs[0], heir.account.address, gs[1]], 2, PERIOD), ll, "BadParty");
     await viem.assertions.revertWithCustomError(call(heir.account.address, gs, 2, PERIOD, "0x1234"), ll, "BadCiphertext");
     await viem.assertions.revertWithCustomError(call(heir.account.address, gs, 2, PERIOD, secret, [env, env]), ll, "BadCiphertext");
+  });
+
+  it("reads ML-DSA key status from the PQC precompile", async () => {
+    const ll = await deploy();
+    const [reg, alg] = await ll.read.pqcKeyOf([owner.account.address]);
+    assert.equal(reg, true);
+    assert.equal(alg, 3);
+    assert.deepEqual(await ll.read.pqcKeyOf([stranger.account.address]), [false, 0]);
+  });
+
+  it("only owners and guardians with a registered ML-DSA key can seal and hand off", async () => {
+    const ll = await deploy();
+    const { id, ctx } = await seal(ll);
+    const logs = await publicClient.getContractEvents({ address: ll.address, abi: ll.abi, eventName: "PqcKeyChecked", fromBlock: 0n });
+    assert.equal(getAddress(logs.at(-1)!.args.account!), getAddress(owner.account.address));
+    assert.equal(logs.at(-1)!.args.registered, true);
+
+    // A guardian whose key is not registered cannot hand off.
+    const at = await viem.getContractAt("MockPqcKeyStatus", PQC);
+    await at.write.set([g1.account.address, false]);
+    await networkHelpers.time.increase(Number(PERIOD) + 1);
+    await viem.assertions.revertWithCustomError(handoff(ll, id, ctx, 0), ll, "NoPqcKey");
+    await handoff(ll, id, ctx, 1);
+
+    // An owner without a registered key cannot seal.
+    await at.write.set([owner.account.address, false]);
+    await viem.assertions.revertWithCustomError(seal(ll), ll, "NoPqcKey");
+  });
+
+  it("with the requirement off, still records the check but lets sealing through", async () => {
+    const ll = await deploy(false);
+    const at = await viem.getContractAt("MockPqcKeyStatus", PQC);
+    await at.write.set([owner.account.address, false]);
+    await seal(ll);
+    const logs = await publicClient.getContractEvents({ address: ll.address, abi: ll.abi, eventName: "PqcKeyChecked", fromBlock: 0n });
+    assert.equal(logs.at(-1)!.args.registered, false);
   });
 });

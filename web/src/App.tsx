@@ -37,6 +37,8 @@ function errText(e: unknown): string {
     return "Not enough test QOR on this account's EVM side. Send it some from QoreX (the address is shown above the app), wait a few seconds, then try again.";
   if (/not been authorized|unauthorized|4100/i.test(m))
     return "QoreX only signs contract transactions from an Ethereum-type (coin type 60) account. This account is a classic QoreChain account. In QoreX, add or switch to an Ethereum-type account, fund it with test QOR, then reload.";
+  if (/NoPqcKey/.test(m))
+    return "This account has no post-quantum (ML-DSA) key registered on QoreChain, so the contract refused it. Register the key in QoreX (it does this the first time the account sends a hybrid-signed transaction), then try again.";
   return m.split("\n")[0].slice(0, 300);
 }
 

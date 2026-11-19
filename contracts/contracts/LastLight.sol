@@ -10,7 +10,9 @@ pragma solidity ^0.8.28;
 ///   - records who the owner, heir and guardians are,
 ///   - tracks the owner's check-ins,
 ///   - decides when the vault is released (a missed check-in),
-///   - accepts guardian handoffs only after release.
+///   - accepts guardian handoffs only after release,
+///   - asks QoreChain's PQC key status precompile whether the owner sealing a
+///     vault, and each guardian handing off, has a registered ML-DSA key.
 ///
 /// The encrypted pieces (about 8 KB per vault) are published in events rather
 /// than storage, which keeps sealing cheap. The contract stores a hash of them
@@ -24,6 +26,12 @@ contract LastLight {
     /// @dev 1-byte version + 1568-byte ML-KEM-1024 ciphertext + 12-byte nonce + 16-byte tag, plus payload.
     uint256 public constant MIN_ENVELOPE_SIZE = 1597;
     uint256 public constant MAX_ENVELOPE_SIZE = 4096;
+    /// @notice QoreChain's PQC key status precompile (IQorePQC.pqcKeyStatus).
+    address public constant PQC_KEY_STATUS = 0x0000000000000000000000000000000000000a02;
+
+    /// @notice When true, sealing and handoffs revert unless the sender has a registered
+    ///         ML-DSA key. When false, the check still runs and is recorded in PqcKeyChecked.
+    bool public immutable requirePqcKey;
 
     struct Vault {
         address owner;
@@ -62,6 +70,7 @@ contract LastLight {
     event Cancelled(uint256 indexed id);
     event Handoff(uint256 indexed id, address indexed guardian, bytes envelope, uint8 handoffCount);
     event NativeLinked(address indexed account, string nativeAddress);
+    event PqcKeyChecked(address indexed account, bool registered, uint8 algorithmId);
 
     error NotOwner();
     error NotGuardian();
@@ -75,6 +84,20 @@ contract LastLight {
     error VaultCancelled();
     error AlreadyHandedOff();
     error BadNativeAddress();
+    error NoPqcKey();
+
+    constructor(bool requirePqcKey_) {
+        requirePqcKey = requirePqcKey_;
+    }
+
+    /// @notice Whether `account` has a post-quantum key registered on QoreChain, read from the
+    ///         PQC key status precompile. Returns false if the precompile is unavailable.
+    function pqcKeyOf(address account) public view returns (bool registered, uint8 algorithmId) {
+        (bool ok, bytes memory out) =
+            PQC_KEY_STATUS.staticcall(abi.encodeWithSignature("pqcKeyStatus(address)", account));
+        if (!ok || out.length < 96) return (false, 0);
+        (registered, algorithmId, ) = abi.decode(out, (bool, uint8, bytes));
+    }
 
     /// @notice Record the native qor1 address that holds this account's ML-KEM-1024 key.
     function linkNative(string calldata nativeAddress) external {
@@ -102,6 +125,7 @@ contract LastLight {
         bytes calldata heirEnvelope,
         bytes[] calldata guardianEnvelopes
     ) external returns (uint256 id) {
+        _checkPqcKey(msg.sender);
         if (period < MIN_PERIOD || period > MAX_PERIOD) revert BadPeriod();
         uint256 n = guardians.length;
         if (n == 0 || n > MAX_GUARDIANS || threshold == 0 || threshold > n) revert BadThreshold();
@@ -168,6 +192,7 @@ contract LastLight {
         if (!_isGuardian(v, msg.sender)) revert NotGuardian();
         if (handedOff[id][msg.sender]) revert AlreadyHandedOff();
         _checkEnvelope(envelope);
+        _checkPqcKey(msg.sender);
         handedOff[id][msg.sender] = true;
         v.handoffCount++;
         emit Handoff(id, msg.sender, envelope, v.handoffCount);
@@ -212,6 +237,12 @@ contract LastLight {
     function _isGuardian(Vault storage v, address who) private view returns (bool) {
         for (uint256 i = 0; i < v.guardians.length; i++) if (v.guardians[i] == who) return true;
         return false;
+    }
+
+    function _checkPqcKey(address account) private {
+        (bool registered, uint8 algorithmId) = pqcKeyOf(account);
+        emit PqcKeyChecked(account, registered, algorithmId);
+        if (requirePqcKey && !registered) revert NoPqcKey();
     }
 
     function _checkEnvelope(bytes calldata e) private pure {

@@ -21,6 +21,7 @@ Built for the QoreChain **Build Before Q-Day** Developer Fest, Encrypted Apps ca
 | ML-KEM-1024 encryption | Every envelope in `packages/crypto` (`@noble/post-quantum` ml_kem1024, then HKDF-SHA256 and AES-256-GCM). |
 | Registered recipient keys | Heirs and guardians publish their ML-KEM-1024 public key on QoreChain with `MsgRegisterKEMKey`. Owners encrypt only to keys read from the chain (`/qorechain/pqc/v1/kem/{address}`). |
 | ML-DSA key binding | Each key account registers an ML-DSA-87 key with proof of possession, and the KEM key is published in a hybrid-signed transaction (secp256k1 + ML-DSA-87). |
+| PQC check in the contract | `LastLight.sol` calls QoreChain's PQC key status precompile (`0x…0a02`, `pqcKeyStatus`) when an owner seals a vault and when a guardian hands off. With `requirePqcKey` on, accounts without a registered ML-DSA key are refused. Every check is logged in a `PqcKeyChecked` event. |
 | Client-side encryption and decryption | Sealing, guardian handoffs and recovery all run in the browser. The contract and the chain only ever hold ciphertext. |
 
 ## How it works
@@ -66,6 +67,8 @@ Before release, the heir holds only Half A and each guardian holds only one shar
 `LastLight.sol` never sees anything readable. It records who the owner, heir and guardians are, tracks check-ins, decides when a vault is released, and accepts guardian handoffs only after release. The encrypted pieces (about 8 KB per vault) are published in events instead of storage, which keeps sealing cheap. The contract stores a hash of them, so the app can confirm that what it reads from the logs is exactly what was sealed.
 
 Each vault id is known before sealing (`nextVaultId`), because every encrypted piece is bound to its vault.
+
+**Post-quantum check on chain.** Sealing a vault and handing off a share both call QoreChain's PQC key status precompile at `0x0000000000000000000000000000000000000a02` (`IQorePQC.pqcKeyStatus`). If `requirePqcKey` was set at deploy, an owner or guardian without a registered ML-DSA key is refused (`NoPqcKey`). Either way the result is recorded in a `PqcKeyChecked` event, and `pqcKeyOf(address)` exposes it to the app. The deploy script reads the precompile for the deployer first and turns the requirement on only if it answers correctly.
 
 ## Run the tests
 

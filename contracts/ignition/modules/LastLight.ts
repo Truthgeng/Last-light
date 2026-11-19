@@ -5,6 +5,6 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
  * and a live EVM authorisation window first (pnpm window register, pnpm window open).
  */
 export default buildModule("LastLightModule", (m) => {
-  const lastLight = m.contract("LastLight");
+  const lastLight = m.contract("LastLight", [m.getParameter("requirePqcKey", true)]);
   return { lastLight };
 });
